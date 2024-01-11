@@ -1,0 +1,93 @@
+---
+title: "Intro to R"
+author: "Andrew Ainsworth"
+date: "2024-01-8"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+# Intro to R for URISE and Bridges students 2024
+## First let's install and load packages that we need.
+
+```{r Load packages}
+#install.packages("foreign") #if you do not have foreign installed remove "#" and run this
+library(foreign) #foreign is for importing SPSS data
+#install.packages("crayon")
+library(crayon) #allows you to control the color of comments, etc. in your code
+```
+
+## Now that the packages are loaded lets load in some data
+```{r Load data}
+#Use "#" to comment things in the chunks that you do not want to be part of the output
+cat(red$bgCyan$bold("Use a combo of cat with crayon commands if you want a comment to show up in your output\n"))
+cat("You can highlight things by" %+%red(" using % and + to separate") %+% " words in your text.\n")
+cat(blue("Make sure you use end sentences with a backslash and an 'n' in order to break up your sentences\n\n\n"))
+
+#Reading in data with foreign read.spss command
+forclass <- read.spss("https://github.com/AndrewAinsworth/IntroR/raw/main/forclass.sav",
+                      to.data.frame=TRUE) 
+names(forclass) <- tolower(names(forclass)) #This sets all of the variable names to lower case
+cat(red("Summaries of the variables in forclass data set\n"))
+summary(forclass) #creates a basic summary of all variables
+
+#Working with specific variables from the larger data set
+#forclass[,8] #Using the column number
+#forclass$a #Using $ and the column name
+attach(forclass) #Creating separate vectors of each variable in the data set that can be called by name
+
+#Creating subsets of variables from a larger data set. 
+personality <- forclass[,4:9] #By column number if they are consecutive
+myvars <- c("ego","c","o","e","a","n") #Or by creating a vector of the column names
+personality2 <- forclass[myvars] #And using them to subset from larger data
+
+#Creating subset by using cbind and combining variablds together
+data2 <- as.data.frame(cbind(forclass$a,forclass$e))
+colnames(data2) <- c("a","e") #But you'll have to rename the columns as the get dropped with cbind
+
+newdata <- forclass[ which(forclass$gender==1), ] #Subset data using grouping variable
+
+#Reading in a dataset that has value labels and you want to drop them
+social <- read.spss("survey.sav", to.data.frame=TRUE, use.value.labels = F)
+names(social) <- tolower(names(social))
+```
+
+```{r 011024}
+#Reading in a tab delimited .dat file that has variable names
+anova1 <- read.table("https://github.com/AndrewAinsworth/IntroR/raw/main/anova.dat",
+                     sep="\t", 
+                     header=TRUE)
+#Reading in a tab delimited .txt file that has variable names
+anova2 <- read.table("https://github.com/AndrewAinsworth/IntroR/raw/main/anova2.txt",
+                     sep="\t", 
+                     header=TRUE)
+#Reading in a comma separated file
+anova3 <- read.csv("https://github.com/AndrewAinsworth/IntroR/raw/main/anova3.csv",
+                     header=TRUE)
+#REading in a fixed width file
+anova4 <- read.fwf("https://github.com/AndrewAinsworth/IntroR/raw/main/anova4.dat",
+                   header=FALSE, #the file doesn't not contain names at the top
+                   skip = 1, #skip the first blank row
+                   widths = c(1,3,2,3,2,3,3,3,3), #column widths for each variable
+                   col.names=c("gender","beforet1","beforet2","beforet3","beforet4","aftert1","aftert2","aftert3","aftert4"))
+```
+
+```{r Analyses}
+#Stack the variables so that the are in BG format and rename columns
+anova1_reconfig <- stack(anova1)
+names(anova1_reconfig)<-c("dv", "iv")
+levels(anova1_reconfig$iv)
+
+#ANOVA from r base
+anova1.aov <- aov(dv ~ iv, data = anova1_reconfig)
+summary(anova1.aov)
+
+#Pull the anova table out and make it pretty with kable
+knitr::kable(anova(anova1.aov), 
+             caption="Anova Summary Table", 
+             digits = c(0,3,3,3,4), 
+             col.names = c('Source','df','SS','MS','F','p'),
+             format = "pipe",
+             padding = 2)
+```
